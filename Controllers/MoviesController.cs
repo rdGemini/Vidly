@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Web.Mvc;
+using System.Linq;
 using Vidly.Models;
 using Vidly.ViewModels;
 
@@ -36,6 +37,15 @@ namespace Vidly.Controllers
                 Movies = movies
             };
             return View(viewModel);
+        }
+
+        public ActionResult Details(int id)
+        {
+            var movie = GetMovies().SingleOrDefault(c => c.Id == id);
+            if (movie == null)
+                return HttpNotFound();
+
+            return View(movie);
         }
     }
 }
