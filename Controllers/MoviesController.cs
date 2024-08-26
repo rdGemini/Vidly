@@ -4,6 +4,9 @@ using System.Linq;
 using Vidly.Models;
 using Vidly.ViewModels;
 using System.Data.Entity;
+using System.Runtime.Remoting.Contexts;
+using System;
+using Vidly.Migrations;
 
 namespace Vidly.Controllers
 {
@@ -27,23 +30,29 @@ namespace Vidly.Controllers
             return View(movies);
         }
 
-        
-        // GET: Movies/Random
-        public ActionResult Random()
+        public ViewResult New()
         {
-            var movies = new List<Movie>
+            var genres = _context.Genres.ToList();
+            var viewModel = new MovieFormViewModel
             {
-                new Movie { Name = "Shrek" },
-                new Movie { Name = "wall-e" }
-
+                Genres = genres
             };
-            var viewModel = new RandomMovieViewModel
-            {
-                Movies = movies
-            };
-            return View(viewModel);
+            return View("MovieForm", viewModel);
         }
 
+        public ActionResult Edit(int id)
+        {
+            var movie = _context.Movies.SingleOrDefault(c => c.Id == id);
+            if (movie == null)
+                return HttpNotFound();
+
+            var viewModel = new MovieFormViewModel
+            {
+                Movie = movie,
+                Genres = _context.Genres.ToList()
+            };
+            return View("MovieForm", viewModel);
+        }
         public ActionResult Details(int id)
         {
             var movie = _context.Movies.Include(m => m.Genre).SingleOrDefault(m => m.Id == id);
@@ -52,6 +61,44 @@ namespace Vidly.Controllers
                 return HttpNotFound();
 
             return View(movie);
+        }
+
+        // GET: Movies/Random
+        public ActionResult Random()
+        {
+            var movie = new Movie() { Name = "Shrek!" };
+            var customers = new List<Customer>
+            {
+                new Customer { Name = "Customer 1" },
+                new Customer { Name = "Customer 2" }
+            };
+            var viewModel = new RandomMovieViewModel
+            {
+                Movie = movie,
+                Customers = customers
+            };
+
+            return View(viewModel);
+        }
+        [HttpPost]
+        public ActionResult Save(Movie movie)
+        {
+            if (movie.Id == 0)
+            {
+                movie.DateAdded = DateTime.Now;
+                _context.Movies.Add(movie);
+            }
+            else
+            {
+                var movieInDb = _context.Movies.Single(m => m.Id == movie.Id);
+                movieInDb.Name = movie.Name;
+                movieInDb.GenreId = movie.GenreId;
+                movieInDb.NumberInStock = movie.NumberInStock;
+                movieInDb.ReleaseDate = movie.ReleaseDate;
+            }
+            _context.SaveChanges();
+
+            return RedirectToAction("Index", "Movies");
         }
     }
 }
